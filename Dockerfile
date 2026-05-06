@@ -1,7 +1,7 @@
-# Use a Python 3.11 base image
 FROM python:3.11-slim
 
-# Install system dependencies for Chrome and Selenium
+# Install system dependencies
+# Note: updated libpango and libatk names for Debian Trixie/13
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -17,21 +17,21 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libgbm1 \
     libasound2 \
-    pango1.0-0 \
+    libpango-1.0-0 \
     libcairo2 \
     && apt-get clean
 
-# Install Google Chrome
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \
+# Install Google Chrome stable
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
+    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \
     && apt-get update && apt-get install -y google-chrome-stable
 
-# Set up the app directory
 WORKDIR /app
 COPY . /app
 
-# Install Python requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Start the script
+# This prevents Python from buffering logs (so you see them in Railway instantly)
+ENV PYTHONUNBUFFERED=1
+
 CMD ["python", "main.py"]
